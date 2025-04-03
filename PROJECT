@@ -7,4 +7,9 @@ layout:
 - go.kubebuilder.io/v4
 projectName: bundle-operator
 repo: github.com/bundle-operator
+resources:
+- controller: true
+  domain: giantswarm.io
+  kind: App
+  version: v1alpha1
 version: "3"

@@ -1,0 +1,38 @@
+scopes:
+  - installation
+  # - org-namespace
+  # - cluster
+
+bundles:
+  # Define the name of the bundles you want to reconcile
+  securityBundle:
+
+    # Define the name of the app you want to apply values to:
+    kyverno:
+      # Define extraConfigs for your app
+      extraConfigs:
+        - kind: ConfigMap
+          name: kyverno-konfigure
+          namespace: giantswarm
+          priority: 100
+
+    edgedb:
+      # Define if the app is enabled or not
+      enabled: false
+
+    falco:
+      # Enable securityFixes for the app (only applies patches)
+      enableSecurityFixes: true
+---
+apps:
+  kyverno:
+    enabled: true
+---
+  apps:
+    kyverno:
+      # Define extraConfigs for your app
+      extraConfigs:
+        - kind: ConfigMap
+          name: kyverno-konfigure
+          namespace: giantswarm
+          priority: 100
