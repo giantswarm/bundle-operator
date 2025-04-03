@@ -1,0 +1,6 @@
+# This file is a Helm values file for the {APP-NAME} chart.
+image:
+  name: "giantswarm/{APP-NAME}"
+  tag: ""
+registry:
+  domain: gsoci.azurecr.io
