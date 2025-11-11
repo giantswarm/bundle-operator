@@ -37,7 +37,10 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	"github.com/bundle-operator/internal/controller"
+	"github.com/giantswarm/bundle-operator/internal/controller"
+	config "github.com/giantswarm/bundle-operator/pkg"
+
+	applicationv1alpha1 "github.com/giantswarm/apiextensions-application/api/v1alpha1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -48,7 +51,7 @@ var (
 
 func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-
+	utilruntime.Must(applicationv1alpha1.AddToScheme(scheme))
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -86,6 +89,9 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	// Init the config for the operator
+	bundleConfigs := config.New("config.yaml")
 
 	// if the enable-http2 flag is false (the default), http/2 should be disabled
 	// due to its vulnerabilities. More specifically, disabling http/2 will
@@ -201,8 +207,9 @@ func main() {
 	}
 
 	if err = (&controller.AppReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
+		Client:  mgr.GetClient(),
+		Scheme:  mgr.GetScheme(),
+		Bundles: bundleConfigs,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "App")
 		os.Exit(1)

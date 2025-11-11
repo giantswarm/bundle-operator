@@ -1,0 +1,36 @@
+securityBundle:
+  trivy:
+    extraConfigs:
+    - name: config1
+      namespace: giantswarm
+      kind: ConfigMap
+      priority: 25
+  kyverno:
+    extraConfigs:
+    - name: config1
+      namespace: giantswarm
+      kind: ConfigMap
+      priority: 25
+    - name: config2
+      namespace: giantswarm
+      kind: ConfigMap
+      priority: 50
+    - name: config3
+      namespace: giantswarm
+      kind: ConfigMap
+      priority: 75
+    - name: config4
+      namespace: giantswarm
+      kind: ConfigMap
+      priority: 100
+  kyvernoPolicies:
+    extraConfigs:
+    - name: config1
+      namespace: giantswarm
+      kind: ConfigMap
+  kyvernoPolicyOperator:
+    extraConfigs:
+    - name: config1
+      namespace: giantswarm
+      kind: ConfigMap
+      priority: 100
