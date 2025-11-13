@@ -7,6 +7,21 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type Bundle struct {
+	Apps BundleAppConfig `yaml:"bundles"`
+}
+
+type BundleAppConfig struct {
+	Apps map[string]BundleApp `yaml:"apps"`
+}
+
+type BundleApp struct {
+	Namespace    string        `yaml:"namespace,omitempty"`
+	Enabled      bool          `yaml:"enabled,omitempty"`
+	Version      string        `yaml:"version,omitempty"`
+	ExtraConfigs []ExtraConfig `yaml:"extraConfigs,omitempty"`
+}
+
 type AppConfig struct {
 	// ExtraConfigs is the list of extra configs to be added to the configmap
 	ExtraConfigs []ExtraConfig `yaml:"extraConfigs"`

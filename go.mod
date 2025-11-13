@@ -1,4 +1,4 @@
-module github.com/bundle-operator
+module github.com/giantswarm/bundle-operator
 
 go 1.23.0
 
@@ -6,8 +6,10 @@ godebug default=go1.23
 
 require (
 	github.com/giantswarm/apiextensions-application v0.6.2
+	github.com/iancoleman/strcase v0.3.0
 	github.com/onsi/ginkgo/v2 v2.22.0
 	github.com/onsi/gomega v1.36.1
+	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/apimachinery v0.32.1
 	k8s.io/client-go v0.32.1
 	sigs.k8s.io/controller-runtime v0.20.4
@@ -100,3 +102,5 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.4.2 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace github.com/giantswarm/bundle-operator => ../bundle-operator

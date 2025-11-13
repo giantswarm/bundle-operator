@@ -18,25 +18,29 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
+	applicationv1alpha1 "github.com/giantswarm/apiextensions-application/api/v1alpha1"
+	config "github.com/giantswarm/bundle-operator/pkg"
+	"github.com/iancoleman/strcase"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-
-	applicationv1alpha1 "github.com/giantswarm/apiextensions-application/api/v1alpha1"
 )
 
 // AppReconciler reconciles a App object
 type AppReconciler struct {
 	client.Client
-	Scheme *runtime.Scheme
+	Scheme  *runtime.Scheme
+	Bundles map[string]config.BundleConfig
 }
 
 func (r *AppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	_ = logf.FromContext(ctx)
 
+	// Skip if outside org-giantswarm
 	if req.Namespace != "org-giantswarm" {
 		return ctrl.Result{}, nil
 	}
@@ -54,10 +58,66 @@ func (r *AppReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.R
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	// Check the App `giantswarm.io/managed-by` label
-	logf.Log.Info(fmt.Prtinl("App managed by %s", app.Labels["giantswarm.io/managed-by"]))
+	appName := strcase.ToLowerCamel(app.Spec.Name)
+
+	// Check if the App name is part of the config
+	if _, exists := r.Bundles[appName]; exists {
+		logf.Log.Info(fmt.Sprintf("App %s/%s found in config, processing", app.Namespace, app.Spec.Name))
+
+		_, err := r.createOrUpdateConfigmap(app, ctx)
+		if err != nil {
+			logf.Log.Error(err, "unable to create or update ConfigMap")
+			return ctrl.Result{}, err
+		}
+
+		// Update App extraConfigs if needed
+		_, err = r.updateAppExtraConfigs(&app, ctx)
+		if err != nil {
+			logf.Log.Error(err, "unable to update App extraConfigs")
+			return ctrl.Result{}, err
+		}
+
+		// Check if it's a legacy security-bundle
+		if isLegacySecurityBundle(app) {
+			logf.Log.Info(fmt.Sprintf("App %s/%s is a legacy security-bundle, processing migration", app.Namespace, app.Spec.Name))
+
+			app.Spec.Version = "1.15.0"
+
+			if err := r.Update(ctx, &app); err != nil {
+				logf.Log.Error(err, "unable to update security-bundle App version")
+				return ctrl.Result{}, err
+			} else {
+				logf.Log.Info(fmt.Sprintf("App %s/%s version updated to 1.15.0", app.Namespace, app.Spec.Name))
+			}
+		}
+	}
 
 	return ctrl.Result{}, nil
+}
+
+// isBundledApp checks if the app is part of a bundle, excluding bundles like cluster and cluster-aws
+func isBundledApp(app applicationv1alpha1.App) bool {
+	if _, exists := app.Annotations["meta.helm.sh/release-name"]; exists {
+		// Check if app is part of a bundle
+		if _, exists := app.Labels["giantswarm.io/managed-by"]; exists {
+			// Check if the release name and the managed by label are the same to exclude cluster matches
+			if app.Labels["giantswarm.io/managed-by"] == app.Annotations["meta.helm.sh/release-name"] {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// handle security-bundle < v1.15.0
+func isLegacySecurityBundle(app applicationv1alpha1.App) bool {
+	if app.Spec.Name == "security-bundle" {
+		if app.Spec.Version < "1.15.0" {
+			return true
+		}
+	}
+	return false
 }
 
 // SetupWithManager sets up the controller with the Manager.
